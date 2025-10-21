@@ -80,7 +80,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./public:/var/www/public
+      - public-project-volume:/var/www/public
     depends_on:
       - nodeweb-container
     networks:

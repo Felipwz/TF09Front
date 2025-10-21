@@ -1,4 +1,5 @@
 import ProductModel from "../../../../Models/ProductModel.js";
+import { Op } from 'sequelize';
 
 export default async function ListProductController(request, response) {
 
@@ -9,8 +10,12 @@ export default async function ListProductController(request, response) {
     const ALLOWED_ORDER_DIRECTION = ["asc", "desc"];
 
     const limit = parseInt(request.query.limit) || 100;
-    const offset = parseInt(request.query.offset) || 0;
+    const page = parseInt(request.query.page) || 1;
     const orderBy = request.query.orderBy || "id,asc";
+    const query = request.query.query || "";
+
+    // Calcula o offset com base na página
+    const offset = (page - 1) * limit;
 
     const [orderField, orderDirection] = orderBy.split(",");
 
@@ -29,7 +34,15 @@ export default async function ListProductController(request, response) {
 
     try {
 
+        // Configura o filtro de busca
+        const whereClause = query ? {
+            name: {
+                [Op.iLike]: `%${query}%`
+            }
+        } : {};
+
         const { rows, count } = await ProductModel.findAndCountAll({
+            where: whereClause,
             limit: limit + 1,
             offset: offset,
             order: [[orderField, orderDirection]]
@@ -38,7 +51,7 @@ export default async function ListProductController(request, response) {
         const hasMore = (rows.length > limit);
 
         const data = (hasMore) ? (rows.slice(0, limit)) : (rows);
-        const next = (hasMore) ? (offset + limit) : (null);
+        const next = (hasMore) ? (page + 1) : (null);
 
         return response.status(HTTP_STATUS.SUCCESS).json({
             rows: data,
